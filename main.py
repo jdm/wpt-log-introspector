@@ -57,6 +57,44 @@ def usage():
     print '%s log [test [-v]]' % sys.argv[0]
     return 1
 
+
+def process_single_test(result, verbose):
+    print '%s (%s, expected %s)' % (
+        result[0]["test"], result[-1]["status"], result[-1]["expected"])
+    print '  rr replay %s' % rr_trace_directory(result)
+    print ''
+    if verbose:
+        for data in result:
+            print data
+    else:
+        print '%s' % result[0]["thread"]
+        command = None
+        start = result[0]["time"]
+        for time, data in itertools.groupby(result, lambda d: d["time"]):
+            print '%.2fs' % ((time - start) / 1000.0)
+            for data in data:
+                if "command" in data and command != data["command"]:
+                    command = data["command"]
+                    start = time
+                    print '%.2fs' % ((time - start) / 1000.0)
+                    print '%s' % command
+
+                if "action" in data and data["action"] == "process_output":
+                    print data["data"]
+
+def process_single_matching_test(testname, verbose):
+    matching = filter(lambda test: testname in test[0]["test"], unexpected_results)
+    if not matching:
+        print 'no matching test found with unexpected results'
+        return 1
+    elif len(matching) > 1:
+        print 'multiple matching tests found with unexpected results; use a more specific test name.'
+        return 1
+    else:
+        process_single_test(matching[0], verbose)
+        return 0
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2 or len(sys.argv) > 4:
         sys.exit(usage())
@@ -70,38 +108,8 @@ if __name__ == "__main__":
     with open(fname) as f:
         unexpected_results = process_structured_wpt_output(f.readlines())
 
-        if len(sys.argv) == 3 or len(sys.argv) == 4:
-            matching = filter(lambda test: sys.argv[2] in test[0]["test"], unexpected_results)
-            if not matching:
-                print 'no matching test found with unexpected results'
-                sys.exit(1)
-            elif len(matching) > 1:
-                print 'multiple matching tests found with unexpected results; use a more specific test name.'
-                sys.exit(1)
-            else:
-                result = matching[0]
-                print '%s (%s, expected %s)' % (
-                    result[0]["test"], result[-1]["status"], result[-1]["expected"])
-                print '  rr replay %s' % rr_trace_directory(result)
-                print ''
-                if verbose:
-                    for data in result:
-                        print data
-                else:
-                    print '%s' % result[0]["thread"]
-                    command = None
-                    start = result[0]["time"]
-                    for time, data in itertools.groupby(result, lambda d: d["time"]):
-                        print '%.2fs' % ((time - start) / 1000.0)
-                        for data in data:
-                            if "command" in data and command != data["command"]:
-                                command = data["command"]
-                                start = time
-                                print '%.2fs' % ((time - start) / 1000.0)
-                                print '%s' % command
-
-                            if "action" in data and data["action"] == "process_output":
-                                print data["data"]
+        if len(sys.argv) > 2:
+            sys.exit(process_single_matching_test(sys.argv[2], verbose))
         else:
             for result in unexpected_results:
                 print '%s (%s, expected %s)' % (
