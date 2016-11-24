@@ -49,8 +49,7 @@ def process_structured_wpt_output(lines):
 
         per_test_output += tests
 
-    unexpected_tests = filter(lambda test: "expected" in test[-1], per_test_output)
-    return unexpected_tests
+    return filter(lambda test: "expected" in test[-1], per_test_output)
     
 
 def usage():
@@ -82,7 +81,8 @@ def process_single_test(result, verbose):
                 if "action" in data and data["action"] == "process_output":
                     print data["data"]
 
-def process_single_matching_test(testname, verbose):
+
+def process_single_matching_test(unexpected_results, testname, verbose):
     matching = filter(lambda test: testname in test[0]["test"], unexpected_results)
     if not matching:
         print 'no matching test found with unexpected results'
@@ -93,6 +93,13 @@ def process_single_matching_test(testname, verbose):
     else:
         process_single_test(matching[0], verbose)
         return 0
+
+
+def print_all_unepected(unexpected_results):
+    for result in unexpected_results:
+        print '%s (%s, expected %s)' % (
+            result[0]["test"], result[-1]["status"], result[-1]["expected"])
+        print '  rr replay %s' % rr_trace_directory(result)
 
 
 if __name__ == "__main__":
@@ -109,9 +116,6 @@ if __name__ == "__main__":
         unexpected_results = process_structured_wpt_output(f.readlines())
 
         if len(sys.argv) > 2:
-            sys.exit(process_single_matching_test(sys.argv[2], verbose))
+            sys.exit(process_single_matching_test(unexpected_results, sys.argv[2], verbose))
         else:
-            for result in unexpected_results:
-                print '%s (%s, expected %s)' % (
-                    result[0]["test"], result[-1]["status"], result[-1]["expected"])
-                print '  rr replay %s' % rr_trace_directory(result)
+            print_all_unepected(unexpected_results)
