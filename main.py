@@ -10,10 +10,6 @@ def rr_trace_directory(output):
     raise "no rr trace found for process %s" % output[0]["process"]
 
 
-def test_name(output):
-    return output[0]["command"]
-
-
 def process_structured_wpt_output(lines):
     unfiltered_data = map(lambda line: json.loads(line), lines)
 
@@ -40,9 +36,11 @@ def process_structured_wpt_output(lines):
                 state = 1
                 test += [data]
             elif state == 1:
-                if not "action" in data or data["action"] in ["process_output", "crash"]:
+                if not "action" in data or data["action"] in ["process_output", "crash", "test_status"]:
                     test += [data]
                 else:
+                    if data["action"] != "test_end":
+                        print data, data["action"]
                     assert data["action"] == "test_end"
                     test += [data]
                     tests += [test]
