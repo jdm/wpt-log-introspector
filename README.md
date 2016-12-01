@@ -9,12 +9,12 @@ where the recording is stored.
 
 ## Display all test files with unexpected results
 
-python main.py wpt.log
+`python main.py wpt.log`
 
 ## Display process output of a particular test, grouped by timestamps
 
-python main.py wpt.log some-failing-test.html
+`python main.py wpt.log some-failing-test.html`
 
 ## Display structured log contents for a particular test
 
-python main.py wpt.log some-failing-test.html -v
+`python main.py wpt.log some-failing-test.html -v`
